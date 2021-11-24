@@ -1,3 +1,5 @@
 {
-    "jwt-secret" : "FKSIONBSI21389JDKF2KD4I92JDKJ"
+    "jwt-secret"   : "FKSIONBSI21389JDKF2KD4I92JDKJ",
+    "CLIENT_ID"    : "1037994517915-866vklg7sl4srf912sov3dig06d58mgm.apps.googleusercontent.com",
+    "CLIENT_SECRET": "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"
 }
