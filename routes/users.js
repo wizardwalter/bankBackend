@@ -10,6 +10,8 @@ const checkAuth = require("../middleware/auth")
 
  router.get('/google/:token', userController.googleLoginUser);
 
+ router.post('/google/create/:token', userController.googleCreateUser);
+
  router.get('/:email', userController.getUser);
 
  router.post('/setBalance/:id', userController.setbalance);

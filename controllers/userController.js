@@ -103,6 +103,39 @@ const { name, email, picture } = ticket.getPayload();
     })
     .catch((error) => console.log(error));
 };
+module.exports.googleCreateUser = async (req, res) => {
+  const  token   = req.params.token
+  const ticket = await client.verifyIdToken({
+    idToken: token,
+    audience: enviromentVariable["CLIENT_ID"]
+});
+const { name, email } = ticket.getPayload();
+const user = new User({
+  name: name,
+  email: email,
+  balance: 0
+});
+user
+.save()
+.then((result) => {
+  const token = jwt.sign(
+    { userEmail: result.email, userId: result._id },
+    enviromentVariable["jwt-secret"],
+    { expiresIn: 5000 }
+  ); 
+  res.status(201).json({
+    ok:true,
+    message: "User created!",
+    user: result,
+    token: token
+  });
+})
+.catch((err) => {
+  res.status(500).json({
+    error: err,
+  });
+});
+};
 
 module.exports.getUser = (req, res) => {
   console.log(req.params.email);
