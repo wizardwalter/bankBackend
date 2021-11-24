@@ -8,35 +8,91 @@ const { OAuth2Client } = require('google-auth-library')
 const client = new OAuth2Client(enviromentVariable["CLIENT_ID"])
 
 module.exports.createUser = (req, res, next) => {
-  bcrypt.hash(req.body.password, 10).then((hash) => {
+  User.findOne({email:req.body.email})
+  .then(user =>{
+    if(!user){
+      bcrypt.hash(req.body.password, 10).then((hash) => {
+        const user = new User({
+          name: req.body.name,
+          email: req.body.email,
+          password: hash,
+          balance: req.body.balance,
+        });
+        user
+          .save()
+          .then((result) => {
+            const token = jwt.sign(
+              { userEmail: result.email, userId: result._id },
+              enviromentVariable["jwt-secret"],
+              { expiresIn: 5000 }
+            ); 
+            res.status(201).json({
+              ok:true,
+              message: "User created!",
+              user: result,
+              token: token
+            });
+          })
+          .catch((err) => {
+            res.status(500).json({
+              error: err,
+            });
+          });
+      });
+    }else{
+      res.json({
+        ok:false,
+        message:"User already exists! Use a new email"
+      })
+    }
+  })
+};
+
+module.exports.googleCreateUser = async (req, res) => {
+  const  token   = req.params.token
+  const ticket = await client.verifyIdToken({
+    idToken: token,
+    audience: enviromentVariable["CLIENT_ID"]
+});
+const { name, email } = ticket.getPayload();
+User.findOne({email:email})
+.then(user=>{
+  if(!user){
     const user = new User({
-      name: req.body.name,
-      email: req.body.email,
-      password: hash,
-      balance: req.body.balance,
+      name: name,
+      email: email,
+      balance: 0
     });
     user
-      .save()
-      .then((result) => {
-        const token = jwt.sign(
-          { userEmail: result.email, userId: result._id },
-          enviromentVariable["jwt-secret"],
-          { expiresIn: 5000 }
-        ); 
-        res.status(201).json({
-          ok:true,
-          message: "User created!",
-          user: result,
-          token: token
-        });
-      })
-      .catch((err) => {
-        res.status(500).json({
-          error: err,
-        });
+    .save()
+    .then((result) => {
+      const token = jwt.sign(
+        { userEmail: result.email, userId: result._id },
+        enviromentVariable["jwt-secret"],
+        { expiresIn: 5000 }
+      ); 
+      res.status(201).json({
+        ok:true,
+        message: "User created!",
+        user: result,
+        token: token
       });
-  });
+    })
+    .catch((err) => {
+      res.status(500).json({
+        error: err,
+      });
+    });
+  }else{
+    res.json({
+      ok:false,
+      message:"User already exists! Use a new email"
+    })
+  }
+})
+
 };
+
 // fix then catch blocks :)
 module.exports.loginUser = (req, res, next) => {
   let fetchedUser;
@@ -103,39 +159,7 @@ const { name, email, picture } = ticket.getPayload();
     })
     .catch((error) => console.log(error));
 };
-module.exports.googleCreateUser = async (req, res) => {
-  const  token   = req.params.token
-  const ticket = await client.verifyIdToken({
-    idToken: token,
-    audience: enviromentVariable["CLIENT_ID"]
-});
-const { name, email } = ticket.getPayload();
-const user = new User({
-  name: name,
-  email: email,
-  balance: 0
-});
-user
-.save()
-.then((result) => {
-  const token = jwt.sign(
-    { userEmail: result.email, userId: result._id },
-    enviromentVariable["jwt-secret"],
-    { expiresIn: 5000 }
-  ); 
-  res.status(201).json({
-    ok:true,
-    message: "User created!",
-    user: result,
-    token: token
-  });
-})
-.catch((err) => {
-  res.status(500).json({
-    error: err,
-  });
-});
-};
+
 
 module.exports.getUser = (req, res) => {
   console.log(req.params.email);
